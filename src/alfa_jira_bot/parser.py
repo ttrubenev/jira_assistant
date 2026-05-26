@@ -50,7 +50,7 @@ FIELD_PATTERNS = {
 
 DESCRIPTION_PATTERN = re.compile(
     r"(?P<prefix>^|\n|[\s,;.!?])"
-    r"(?:с\s+описанием|описание|дискрипше?н|description|desc)"
+    r"(?:с\s+описани(?:ем|е)|описание|дискрипше?н|description|desc)"
     r"\s*:?\s*(?P<value>.+)$",
     re.IGNORECASE | re.DOTALL,
 )
@@ -116,6 +116,15 @@ def parse_issue_message(text: str) -> ParsedMessage:
         assignee_query=fields["assignee_query"],
         sprint_query=fields["sprint_query"],
         estimate=estimate,
+    )
+
+
+def looks_like_issue_command(text: str) -> bool:
+    cleaned = normalize_whitespace(text)
+    return bool(
+        CREATE_PREFIX.match(cleaned)
+        or BATCH_CREATE_PREFIX.match(cleaned)
+        or UPDATE_COMMAND_PATTERN.match(cleaned)
     )
 
 

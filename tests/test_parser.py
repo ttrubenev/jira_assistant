@@ -43,6 +43,7 @@ class ParserTests(unittest.TestCase):
     def test_parses_description_aliases(self) -> None:
         cases = [
             ("Описание проверить попап", "проверить попап."),
+            ("с описание проверить попап", "проверить попап."),
             ("Дискрипшен проверить попап.", "проверить попап."),
             ("Дискрипшн проверить попап.", "проверить попап."),
             ("description check popup", "check popup."),

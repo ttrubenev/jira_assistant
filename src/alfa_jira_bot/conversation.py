@@ -13,7 +13,7 @@ from .domain import (
     UpdatedIssue,
 )
 from .fuzzy import rank_candidates
-from .parser import parse_issue_batch, parse_issue_message, parse_issue_update
+from .parser import looks_like_issue_command, parse_issue_batch, parse_issue_message, parse_issue_update
 from .ports import JiraGateway
 
 
@@ -48,23 +48,7 @@ class ConversationManager:
         session = self.sessions.setdefault(chat_id, ChatSession())
 
         if session.state == ConversationState.IDLE:
-            if is_confirmation_reply(normalized):
-                return [BotReply("Сейчас нечего подтверждать. Напишите задачу или команду.")]
-
-            update = parse_issue_update(normalized)
-            if update is not None:
-                if update.issue_key is not None:
-                    updated = await self.jira.update_issue_estimate(update.issue_key, update.estimate)
-                    return [BotReply(format_updated_issue(updated))]
-                return await self._resolve_issue_update(chat_id, update.issue_query or "", update.estimate)
-
-            batch = parse_issue_batch(normalized)
-            if batch:
-                return await self._prepare_batch(chat_id, tuple(parsed.to_draft() for parsed in batch))
-
-            draft = parse_issue_message(normalized).to_draft()
-            session.draft = draft
-            return await self._resolve_next(chat_id)
+            return await self._start_new_request(chat_id, normalized)
 
         if session.state in {
             ConversationState.RESOLVING_EPIC,
@@ -81,6 +65,29 @@ class ConversationManager:
             return await self._handle_batch_confirmation(chat_id, normalized)
 
         return [BotReply("Не понял состояние диалога. Напишите задачу заново.")]
+
+    async def _start_new_request(self, chat_id: int, text: str) -> list[BotReply]:
+        session = self.sessions.setdefault(chat_id, ChatSession())
+        session.state = ConversationState.IDLE
+        session.draft = None
+        session.batch_drafts = ()
+        session.pending_update = None
+        session.candidates = ()
+
+        update = parse_issue_update(text)
+        if update is not None:
+            if update.issue_key is not None:
+                updated = await self.jira.update_issue_estimate(update.issue_key, update.estimate)
+                return [BotReply(format_updated_issue(updated))]
+            return await self._resolve_issue_update(chat_id, update.issue_query or "", update.estimate)
+
+        batch = parse_issue_batch(text)
+        if batch:
+            return await self._prepare_batch(chat_id, tuple(parsed.to_draft() for parsed in batch))
+
+        draft = parse_issue_message(text).to_draft()
+        session.draft = draft
+        return await self._resolve_next(chat_id)
 
     async def _handle_candidate_answer(self, chat_id: int, text: str) -> list[BotReply]:
         session = self.sessions[chat_id]
@@ -129,7 +136,10 @@ class ConversationManager:
             self.sessions.pop(chat_id, None)
             return [BotReply("Ок, отменил создание задачи.")]
 
-        return [BotReply("Создать задачу? Ответьте «да» или «нет».")]
+        if looks_like_issue_command(text):
+            return await self._start_new_request(chat_id, text)
+
+        return [BotReply(format_confirmation(draft))]
 
     async def _handle_batch_confirmation(self, chat_id: int, text: str) -> list[BotReply]:
         session = self.sessions[chat_id]
@@ -147,7 +157,10 @@ class ConversationManager:
             self.sessions.pop(chat_id, None)
             return [BotReply("Ок, отменил создание задач.")]
 
-        return [BotReply(f"Создать {len(drafts)} задачи? Ответьте «да» или «нет».")]
+        if looks_like_issue_command(text):
+            return await self._start_new_request(chat_id, text)
+
+        return [BotReply(format_batch_confirmation(drafts))]
 
     async def _resolve_next(self, chat_id: int) -> list[BotReply]:
         session = self.sessions[chat_id]
@@ -443,7 +456,3 @@ def is_positive(text: str) -> bool:
 
 def is_negative(text: str) -> bool:
     return text.casefold() in {"нет", "не", "no", "n", "отмена"}
-
-
-def is_confirmation_reply(text: str) -> bool:
-    return is_positive(text) or is_negative(text)

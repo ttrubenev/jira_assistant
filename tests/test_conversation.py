@@ -165,10 +165,9 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(replies[0].text, "Ок, отменил создание задачи.")
 
-    async def test_idle_negative_confirmation_does_not_start_new_issue(self) -> None:
-        jira = FakeJira()
+    async def test_new_create_command_replaces_pending_confirmation(self) -> None:
         manager = ConversationManager(
-            jira,
+            FakeJira(),
             defaults=ConversationDefaults(
                 epic=Candidate(id="ABC-456", key="ABC-456", name="Default Epic", kind=CandidateKind.EPIC),
                 assignee=Candidate(id="user_key", key="user_key", name="Иванов Иван", kind=CandidateKind.ASSIGNEE),
@@ -176,10 +175,33 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
             ),
         )
 
-        replies = await manager.handle_text(10, "Нет")
+        await manager.handle_text(10, "Создай задачу: старая задача. оценка 1")
+        replies = await manager.handle_text(
+            10,
+            "Заведи задачу Адресная заявка с оценкой 2 на Иванов с описание Создать дизайн.",
+        )
 
-        self.assertEqual(replies[0].text, "Сейчас нечего подтверждать. Напишите задачу или команду.")
-        self.assertEqual(jira.created, [])
+        self.assertIn("Проверьте задачу", replies[0].text)
+        self.assertIn("Название: Адресная заявка", replies[0].text)
+        self.assertIn("Исполнитель: Иванов Иван", replies[0].text)
+        self.assertIn("Estimate: 2", replies[0].text)
+        self.assertIn("Description: Создать дизайн.", replies[0].text)
+
+    async def test_invalid_confirmation_answer_repeats_full_confirmation(self) -> None:
+        manager = ConversationManager(
+            FakeJira(),
+            defaults=ConversationDefaults(
+                epic=Candidate(id="ABC-456", key="ABC-456", name="Default Epic", kind=CandidateKind.EPIC),
+                assignee=Candidate(id="user_key", key="user_key", name="Иванов Иван", kind=CandidateKind.ASSIGNEE),
+                sprint_query="[ABC:TEAM]",
+            ),
+        )
+
+        await manager.handle_text(10, "Создай задачу: проверить историю. оценка 1")
+        replies = await manager.handle_text(10, "не понял")
+
+        self.assertIn("Проверьте задачу", replies[0].text)
+        self.assertIn("Название: проверить историю", replies[0].text)
 
     async def test_updates_existing_issue_estimate(self) -> None:
         manager = ConversationManager(FakeJira())
