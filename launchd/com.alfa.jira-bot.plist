@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.alfa.jira-bot</string>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/astonuser/Documents/Alfa</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key>
+    <string>/Users/astonuser/Documents/Alfa/src</string>
+  </dict>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/astonuser/Documents/Alfa/.venv/bin/python</string>
+    <string>-m</string>
+    <string>alfa_jira_bot</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/astonuser/Documents/Alfa/logs/bot.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/astonuser/Documents/Alfa/logs/bot.err.log</string>
+</dict>
+</plist>
