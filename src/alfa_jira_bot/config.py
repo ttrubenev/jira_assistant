@@ -32,7 +32,13 @@ class BotConfig:
     jira_default_assignee_name: str | None
     jira_default_assignee_email: str | None
     jira_verify_tls: bool
+    ai_agent_enabled: bool
+    openai_api_key: str | None
+    openai_base_url: str
+    openai_intent_model: str
+    voice_transcriber_provider: str
     voice_transcriber_command: str | None
+    voice_transcriber_model: str
 
     @classmethod
     def from_env(cls) -> "BotConfig":
@@ -65,7 +71,13 @@ class BotConfig:
             jira_default_assignee_name=optional_env("JIRA_DEFAULT_ASSIGNEE_NAME"),
             jira_default_assignee_email=optional_env("JIRA_DEFAULT_ASSIGNEE_EMAIL"),
             jira_verify_tls=bool_env("JIRA_VERIFY_TLS", default=True),
+            ai_agent_enabled=bool_env("AI_AGENT_ENABLED", default=False),
+            openai_api_key=optional_env("OPENAI_API_KEY"),
+            openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com").rstrip("/"),
+            openai_intent_model=os.getenv("OPENAI_INTENT_MODEL", "gpt-5.5").strip(),
+            voice_transcriber_provider=os.getenv("VOICE_TRANSCRIBER_PROVIDER", "command").strip().lower(),
             voice_transcriber_command=optional_env("VOICE_TRANSCRIBER_COMMAND"),
+            voice_transcriber_model=os.getenv("VOICE_TRANSCRIBER_MODEL", "gpt-4o-mini-transcribe").strip(),
         )
 
 

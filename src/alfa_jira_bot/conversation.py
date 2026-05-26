@@ -35,6 +35,10 @@ class ConversationManager:
         self.defaults = defaults or ConversationDefaults()
         self.sessions: dict[int, ChatSession] = {}
 
+    def is_idle(self, chat_id: int) -> bool:
+        session = self.sessions.get(chat_id)
+        return session is None or session.state == ConversationState.IDLE
+
     async def handle_text(self, chat_id: int, text: str) -> list[BotReply]:
         normalized = text.strip()
         if is_cancel(normalized):
@@ -120,7 +124,7 @@ class ConversationManager:
 
         if is_negative(text):
             self.sessions.pop(chat_id, None)
-            return [BotReply("Ок, не создаю задачу.")]
+            return [BotReply("Ок, отменил создание задачи.")]
 
         return [BotReply("Создать задачу? Ответьте «да» или «нет».")]
 
@@ -138,7 +142,7 @@ class ConversationManager:
 
         if is_negative(text):
             self.sessions.pop(chat_id, None)
-            return [BotReply("Ок, не создаю задачи.")]
+            return [BotReply("Ок, отменил создание задач.")]
 
         return [BotReply(f"Создать {len(drafts)} задачи? Ответьте «да» или «нет».")]
 
@@ -365,18 +369,18 @@ def format_candidates(title: str, candidates: tuple[Candidate, ...]) -> str:
 
 
 def format_confirmation(draft: IssueDraft) -> str:
-    return "\n".join(
-        [
-            "Проверьте задачу:",
-            f"Название: {draft.summary}",
-            f"Эпик: {draft.epic.display_name if draft.epic else 'не выбран'}",
-            f"Исполнитель: {draft.assignee.display_name if draft.assignee else 'не выбран'}",
-            f"Спринт: {draft.sprint.display_name if draft.sprint else 'не выбран'}",
-            f"Estimate: {format_estimate(draft.estimate)}",
-            "",
-            "Создать задачу? Ответьте «да» или «нет».",
-        ]
-    )
+    lines = [
+        "Проверьте задачу:",
+        f"Название: {draft.summary}",
+        f"Эпик: {draft.epic.display_name if draft.epic else 'не выбран'}",
+        f"Исполнитель: {draft.assignee.display_name if draft.assignee else 'не выбран'}",
+        f"Спринт: {draft.sprint.display_name if draft.sprint else 'не выбран'}",
+        f"Estimate: {format_estimate(draft.estimate)}",
+    ]
+    if draft.description:
+        lines.append(f"Description: {format_description(draft.description)}")
+    lines.extend(["", "Создать задачу? Ответьте «да» или «нет»."])
+    return "\n".join(lines)
 
 
 def format_batch_confirmation(drafts: tuple[IssueDraft, ...]) -> str:
@@ -387,6 +391,8 @@ def format_batch_confirmation(drafts: tuple[IssueDraft, ...]) -> str:
             f"Исполнитель: {draft.assignee.display_name if draft.assignee else 'не выбран'} — "
             f"Спринт: {draft.sprint.display_name if draft.sprint else 'не выбран'}"
         )
+        if draft.description:
+            lines.append(f"   Description: {format_description(draft.description)}")
     lines.extend(["", f"Создать {len(drafts)} задачи? Ответьте «да» или «нет»."])
     return "\n".join(lines)
 
@@ -414,8 +420,18 @@ def format_estimate(estimate: float | None) -> str:
     return str(numeric_estimate).rstrip("0").rstrip(".")
 
 
+def format_description(description: str) -> str:
+    return truncate_text(description, limit=500)
+
+
+def truncate_text(text: str, *, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return f"{text[: limit - 1].rstrip()}…"
+
+
 def is_cancel(text: str) -> bool:
-    return text.casefold() in {"/cancel", "отмена", "отмени", "стоп"}
+    return text.casefold() in {"/cancel", "отмена", "отменить", "отмени", "стоп"}
 
 
 def is_positive(text: str) -> bool:

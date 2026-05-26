@@ -28,7 +28,13 @@ class JiraFieldsTests(unittest.TestCase):
             jira_default_assignee_name="Трубенёв Тимофей Александрович",
             jira_default_assignee_email="TTrubenev@alfabank.ru",
             jira_verify_tls=False,
+            ai_agent_enabled=False,
+            openai_api_key=None,
+            openai_base_url="https://api.openai.com",
+            openai_intent_model="gpt-5.5",
+            voice_transcriber_provider="command",
             voice_transcriber_command=None,
+            voice_transcriber_model="gpt-4o-mini-transcribe",
         )
 
         fields = JiraClient(config)._default_create_fields()
@@ -58,7 +64,13 @@ class JiraFieldsTests(unittest.TestCase):
             jira_default_assignee_name="Трубенёв Тимофей Александрович",
             jira_default_assignee_email="TTrubenev@alfabank.ru",
             jira_verify_tls=False,
+            ai_agent_enabled=False,
+            openai_api_key=None,
+            openai_base_url="https://api.openai.com",
+            openai_intent_model="gpt-5.5",
+            voice_transcriber_provider="command",
             voice_transcriber_command=None,
+            voice_transcriber_model="gpt-4o-mini-transcribe",
         )
 
         fields = JiraClient(config)._estimate_fields(3)

@@ -110,11 +110,58 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Трубенёв Тимофей Александрович", replies[0].text)
         self.assertIn("U_M28HF", replies[0].text)
 
+    async def test_confirmation_shows_description(self) -> None:
+        manager = ConversationManager(
+            FakeJira(),
+            defaults=ConversationDefaults(
+                epic=Candidate(
+                    id="DFA-33230",
+                    key="DFA-33230",
+                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    kind=CandidateKind.EPIC,
+                ),
+                assignee=Candidate(
+                    id="U_M28HF",
+                    key="U_M28HF",
+                    name="Трубенёв Тимофей Александрович",
+                    email="TTrubenev@alfabank.ru",
+                    kind=CandidateKind.ASSIGNEE,
+                ),
+                sprint_query="[DFA:STORM]",
+            ),
+        )
+
+        replies = await manager.handle_text(
+            10,
+            "Создай задачу: тест. Описание Создать окно подтверждения.",
+        )
+
+        self.assertIn("Description: Создать окно подтверждения.", replies[0].text)
+
     async def test_cancel_resets_session(self) -> None:
         manager = ConversationManager(FakeJira())
 
         await manager.handle_text(10, "Создай задачу: проверить историю")
         replies = await manager.handle_text(10, "/cancel")
+
+        self.assertEqual(replies[0].text, "Ок, отменил создание задачи.")
+
+    async def test_cancel_button_text_resets_session(self) -> None:
+        manager = ConversationManager(FakeJira())
+
+        await manager.handle_text(10, "Создай задачу: проверить историю")
+        replies = await manager.handle_text(10, "Отменить")
+
+        self.assertEqual(replies[0].text, "Ок, отменил создание задачи.")
+
+    async def test_negative_confirmation_cancels_issue_creation(self) -> None:
+        manager = ConversationManager(FakeJira())
+
+        await manager.handle_text(
+            10,
+            "Создай задачу: проверить историю. Эпик профиль, На Иванов, Спринт Alfa Mobile 24.6",
+        )
+        replies = await manager.handle_text(10, "Нет")
 
         self.assertEqual(replies[0].text, "Ок, отменил создание задачи.")
 
@@ -170,6 +217,62 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(jira.created), 2)
         self.assertIn("ABC-123", replies[0].text)
         self.assertIn("ABC-124", replies[0].text)
+
+    async def test_batch_confirmation_shows_description(self) -> None:
+        manager = ConversationManager(
+            FakeJira(),
+            defaults=ConversationDefaults(
+                epic=Candidate(
+                    id="DFA-33230",
+                    key="DFA-33230",
+                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    kind=CandidateKind.EPIC,
+                ),
+                assignee=Candidate(
+                    id="U_M28HF",
+                    key="U_M28HF",
+                    name="Трубенёв Тимофей Александрович",
+                    email="TTrubenev@alfabank.ru",
+                    kind=CandidateKind.ASSIGNEE,
+                ),
+                sprint_query="[DFA:STORM]",
+            ),
+        )
+
+        replies = await manager.handle_text(
+            10,
+            "Создай задачи: тест1. Описание первое описание. задача тест2. оценка 1.",
+        )
+
+        self.assertIn("Description: первое описание.", replies[0].text)
+
+    async def test_negative_batch_confirmation_cancels_issue_creation(self) -> None:
+        jira = FakeJira()
+        manager = ConversationManager(
+            jira,
+            defaults=ConversationDefaults(
+                epic=Candidate(
+                    id="DFA-33230",
+                    key="DFA-33230",
+                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    kind=CandidateKind.EPIC,
+                ),
+                assignee=Candidate(
+                    id="U_M28HF",
+                    key="U_M28HF",
+                    name="Трубенёв Тимофей Александрович",
+                    email="TTrubenev@alfabank.ru",
+                    kind=CandidateKind.ASSIGNEE,
+                ),
+                sprint_query="[DFA:STORM]",
+            ),
+        )
+
+        await manager.handle_text(10, "Создай задачи: тест1. оценка 2. задача тест2. оценка 1.")
+        replies = await manager.handle_text(10, "Нет")
+
+        self.assertEqual(replies[0].text, "Ок, отменил создание задач.")
+        self.assertEqual(jira.created, [])
 
 
 if __name__ == "__main__":

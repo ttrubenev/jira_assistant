@@ -29,6 +29,33 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parsed.assignee_query, "Трубенёва Тимофей")
         self.assertEqual(parsed.estimate, 0.5)
 
+    def test_parses_explicit_description(self) -> None:
+        parsed = parse_issue_message(
+            "Заведи тикет [design] тест с оценкой 5 на Трубенёва "
+            "с описанием Создать окно подтверждения. Ссылка www.b.com."
+        )
+
+        self.assertEqual(parsed.summary, "[design] тест")
+        self.assertEqual(parsed.assignee_query, "Трубенёва")
+        self.assertEqual(parsed.estimate, 5)
+        self.assertEqual(parsed.description, "Создать окно подтверждения. Ссылка www.b.com.")
+
+    def test_parses_description_aliases(self) -> None:
+        cases = [
+            ("Описание проверить попап", "проверить попап."),
+            ("Дискрипшен проверить попап.", "проверить попап."),
+            ("Дискрипшн проверить попап.", "проверить попап."),
+            ("description check popup", "check popup."),
+            ("desc check popup", "check popup."),
+        ]
+
+        for marker_text, expected_description in cases:
+            with self.subTest(marker_text=marker_text):
+                parsed = parse_issue_message(f"Создай задачу: тест. {marker_text}")
+
+                self.assertEqual(parsed.summary, "тест")
+                self.assertEqual(parsed.description, expected_description)
+
     def test_parses_issue_update_estimate(self) -> None:
         parsed = parse_issue_update("Измени DFA-12345 story points 5")
 
@@ -74,6 +101,27 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parsed[1].estimate, 1)
         self.assertEqual(parsed[2].summary, "тест3")
         self.assertEqual(parsed[2].estimate, 1)
+
+    def test_parses_natural_issue_batch(self) -> None:
+        parsed = parse_issue_batch("заведи тест1 с оценкой 0.1 и задачу тест2 с оценкой 0.8")
+
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0].summary, "тест1")
+        self.assertEqual(parsed[0].estimate, 0.1)
+        self.assertEqual(parsed[1].summary, "тест2")
+        self.assertEqual(parsed[1].estimate, 0.8)
+
+    def test_parses_plural_create_batch_with_accusative_marker(self) -> None:
+        parsed = parse_issue_batch(
+            "заведи задачи [design] Интерфейс заявки с оценкой 2. "
+            "задачу [design] Подача отчётности с оценкой 5"
+        )
+
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0].summary, "[design] Интерфейс заявки")
+        self.assertEqual(parsed[0].estimate, 2)
+        self.assertEqual(parsed[1].summary, "[design] Подача отчётности")
+        self.assertEqual(parsed[1].estimate, 5)
 
 
 if __name__ == "__main__":

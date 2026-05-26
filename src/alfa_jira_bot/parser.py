@@ -48,9 +48,16 @@ FIELD_PATTERNS = {
     ),
 }
 
+DESCRIPTION_PATTERN = re.compile(
+    r"(?P<prefix>^|\n|[\s,;.!?])"
+    r"(?:с\s+описанием|описание|дискрипше?н|description|desc)"
+    r"\s*:?\s*(?P<value>.+)$",
+    re.IGNORECASE | re.DOTALL,
+)
 ESTIMATE_PATTERN = re.compile(
     r"(?P<prefix>^|\n|[\s,;])"
-    r"(?:estimate|est|оценка|стори\s*поинт(?:ы|ов)?|story\s*points?|sp)"
+    r"(?:с\s+|со\s+)?"
+    r"(?:estimate|est|оценк(?:а|ой|у|е|и)?|стори\s*поинт(?:ы|ов)?|story\s*points?|sp)"
     r"\s*:?\s*(?P<value>\d+(?:[.,]\d+)?)\b",
     re.IGNORECASE,
 )
@@ -65,27 +72,32 @@ UPDATE_COMMAND_PATTERN = re.compile(
     re.IGNORECASE,
 )
 UPDATE_FILLER_PATTERN = re.compile(
-    r"\b(?:story\s*points?|стори\s*поинт(?:ы|ов)?|estimate|est|оценк[аеуи]?|sp|в|у|для|задач[аеуи]?)\b",
+    r"\b(?:story\s*points?|стори\s*поинт(?:ы|ов)?|estimate|est|оценк(?:а|ой|у|е|и)?|sp|в|у|для|задач[аеуи]?)\b",
     re.IGNORECASE,
 )
 
 CREATE_PREFIX = re.compile(
-    r"^\s*(?:создай|создать|заведи|завести|добавь|добавить)\s+(?:задачу|таску)?\s*:?\s*",
+    r"^\s*(?:создай|создать|заведи|завести|добавь|добавить)\s+(?:задач[ауи]?|таск[ауи]?|тикет)?\s*:?\s*",
     re.IGNORECASE,
 )
 BATCH_CREATE_PREFIX = re.compile(
-    r"^\s*(?:создай|создать|заведи|завести|добавь|добавить)\s+(?:задачи|таски)\s*:?\s*",
+    r"^\s*(?:создай|создать|заведи|завести|добавь|добавить)\s+(?:задачи|таски|тикеты)\s*:?\s*",
     re.IGNORECASE,
 )
 BATCH_ITEM_MARKER = re.compile(
-    r"(?:(?<=^)|(?<=[.!?])\s+)(?:задача|таска)\s+",
+    r"(?:(?<=^)|(?<=[.!?])\s+)(?:задач[ауи]?|таск[ауи]?|тикет)\s+",
+    re.IGNORECASE,
+)
+BATCH_CONJUNCTION_MARKER = re.compile(
+    r"\s+и\s+(?:задачу|задача|таску|таска|тикет)\s+",
     re.IGNORECASE,
 )
 
 
 def parse_issue_message(text: str) -> ParsedMessage:
     cleaned = normalize_whitespace(text)
-    estimate, cleaned_without_estimate = extract_estimate(cleaned)
+    description, cleaned_without_description = extract_description(cleaned)
+    estimate, cleaned_without_estimate = extract_estimate(cleaned_without_description)
     fields: dict[str, str | None] = {}
     summary_source = cleaned_without_estimate
 
@@ -99,7 +111,7 @@ def parse_issue_message(text: str) -> ParsedMessage:
     summary = extract_summary(summary_source)
     return ParsedMessage(
         summary=summary,
-        description="",
+        description=description,
         epic_query=fields["epic_query"],
         assignee_query=fields["assignee_query"],
         sprint_query=fields["sprint_query"],
@@ -107,13 +119,30 @@ def parse_issue_message(text: str) -> ParsedMessage:
     )
 
 
+def extract_description(text: str) -> tuple[str, str]:
+    match = DESCRIPTION_PATTERN.search(text)
+    if match is None:
+        return "", text
+
+    description = normalize_whitespace(match.group("value")).strip(" .")
+    if description:
+        description = ensure_sentence_punctuation(description)
+
+    cleaned = normalize_whitespace(f"{text[: match.start()]}{match.group('prefix')}")
+    return description, cleaned
+
+
 def parse_issue_batch(text: str) -> tuple[ParsedMessage, ...]:
     cleaned = normalize_whitespace(text)
     match = BATCH_CREATE_PREFIX.match(cleaned)
-    if match is None:
-        return ()
+    if match is not None:
+        raw_items = split_batch_items(cleaned[match.end() :])
+    else:
+        generic_match = CREATE_PREFIX.match(cleaned)
+        if generic_match is None:
+            return ()
+        raw_items = split_batch_items(cleaned[generic_match.end() :])
 
-    raw_items = split_batch_items(cleaned[match.end() :])
     if len(raw_items) < 2:
         return ()
 
@@ -127,8 +156,21 @@ def split_batch_items(text: str) -> tuple[str, ...]:
 
     markers = list(BATCH_ITEM_MARKER.finditer(body))
     if not markers:
+        return split_batch_items_by_conjunction(body)
+
+    return split_by_markers(body, markers)
+
+
+def split_batch_items_by_conjunction(text: str) -> tuple[str, ...]:
+    body = normalize_whitespace(text).strip(" .")
+    markers = list(BATCH_CONJUNCTION_MARKER.finditer(body))
+    if not markers:
         return ()
 
+    return split_by_markers(body, markers)
+
+
+def split_by_markers(body: str, markers: list[re.Match[str]]) -> tuple[str, ...]:
     items: list[str] = []
     first_item = body[: markers[0].start()].strip(" .")
     if first_item:
@@ -225,3 +267,9 @@ def truncate(text: str, *, limit: int) -> str:
     if len(text) <= limit:
         return text
     return f"{text[: limit - 1].rstrip()}…"
+
+
+def ensure_sentence_punctuation(text: str) -> str:
+    if text.endswith((".", "!", "?")):
+        return text
+    return f"{text}."
