@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import suppress
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from telegram import BotCommand, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.constants import ChatAction
@@ -14,7 +12,6 @@ from .config import BotConfig
 from .conversation import BotReply, ConversationDefaults, ConversationManager
 from .domain import Candidate, CandidateKind
 from .jira import JiraClient
-from .transcriber import VoiceTranscriber, build_transcriber
 
 CANCEL_BUTTON_TEXT = "Отменить"
 YES_BUTTON_TEXT = "Да"
@@ -31,25 +28,16 @@ def run() -> None:
         model=config.openai_intent_model,
         base_url=config.openai_base_url,
     )
-    transcriber = build_transcriber(
-        provider=config.voice_transcriber_provider,
-        command=config.voice_transcriber_command,
-        openai_api_key=config.openai_api_key,
-        openai_base_url=config.openai_base_url,
-        openai_model=config.voice_transcriber_model,
-    )
 
     app = Application.builder().token(config.telegram_bot_token).build()
     app.bot_data["conversation"] = conversation
     app.bot_data["intent_interpreter"] = intent_interpreter
-    app.bot_data["transcriber"] = transcriber
 
     app.post_init = setup_bot_commands
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("cancel", cancel))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    app.add_handler(MessageHandler(filters.VOICE, handle_voice))
 
     app.run_polling()
 
@@ -98,36 +86,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await reply_with_menu(update, reply)
 
 
-async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.message is None or update.message.voice is None or update.effective_chat is None:
-        return
-
-    transcriber = get_transcriber(context)
-    try:
-        with TemporaryDirectory() as tmp_dir:
-            voice_file = await update.message.voice.get_file()
-            path = Path(tmp_dir) / "voice.oga"
-            await voice_file.download_to_drive(custom_path=path)
-            text = await transcriber.transcribe(path)
-    except Exception as error:
-        await update.message.reply_text(
-            f"Не смог распознать голос: {error}\nПришлите задачу текстом или попробуйте голосом позже.",
-            reply_markup=main_menu_markup(),
-        )
-        return
-
-    conversation = get_conversation(context)
-    intent_interpreter = get_intent_interpreter(context)
-    replies = await with_typing_indicator(
-        context,
-        update.effective_chat.id,
-        safe_handle_text(conversation, intent_interpreter, update.effective_chat.id, text),
-    )
-    await update.message.reply_text(f"Распознал: {text}", reply_markup=main_menu_markup())
-    for reply in replies:
-        await reply_with_menu(update, reply)
-
-
 def main_menu_markup() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         [[KeyboardButton(CANCEL_BUTTON_TEXT)]],
@@ -161,7 +119,7 @@ def help_text() -> str:
             "Если эпик, спринт или исполнитель не указаны, я подставляю значения по умолчанию, которые задавались при создании бота, или могу найти похожие варианты и предложу их.",
             "",
             "Пример создания одной задачи:",
-            "• Заведи тикет Title с оценкой 5 на Трубенёва с описанием Description",
+            "• Заведи тикет Title с оценкой 5 на Иванова с описанием Description",
             "• Создай задачу: Title. Эпик Epic Name. Спринт Sprint Name. Estimate 2",
             "",
             "Пример создания сразу нескольких задач:",
@@ -169,7 +127,7 @@ def help_text() -> str:
             "",
             "Примеры изменения оценки у заведённой задачи:",
             "• Измени в задаче Title оценку на 0.5",
-            "• Измени DFA-12345 Estimate 3",
+            "• Измени ABC-123 Estimate 3",
             "• Измени оценку Title на 0.1",
             "",
             "Команды:",
@@ -221,10 +179,6 @@ def get_conversation(context: ContextTypes.DEFAULT_TYPE) -> ConversationManager:
 
 def get_intent_interpreter(context: ContextTypes.DEFAULT_TYPE) -> IntentInterpreter:
     return context.application.bot_data["intent_interpreter"]
-
-
-def get_transcriber(context: ContextTypes.DEFAULT_TYPE) -> VoiceTranscriber:
-    return context.application.bot_data["transcriber"]
 
 
 async def safe_handle_text(

@@ -23,20 +23,20 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parsed.description, "")
 
     def test_parses_estimate_without_polluting_assignee(self) -> None:
-        parsed = parse_issue_message("Создай задачу: [design] тест. На Трубенёва Тимофей Estimate 0,5")
+        parsed = parse_issue_message("Создай задачу: [design] тест. На Иванова Иван Estimate 0,5")
 
         self.assertEqual(parsed.summary, "[design] тест")
-        self.assertEqual(parsed.assignee_query, "Трубенёва Тимофей")
+        self.assertEqual(parsed.assignee_query, "Иванова Иван")
         self.assertEqual(parsed.estimate, 0.5)
 
     def test_parses_explicit_description(self) -> None:
         parsed = parse_issue_message(
-            "Заведи тикет [design] тест с оценкой 5 на Трубенёва "
+            "Заведи тикет [design] тест с оценкой 5 на Иванова "
             "с описанием Создать окно подтверждения. Ссылка www.b.com."
         )
 
         self.assertEqual(parsed.summary, "[design] тест")
-        self.assertEqual(parsed.assignee_query, "Трубенёва")
+        self.assertEqual(parsed.assignee_query, "Иванова")
         self.assertEqual(parsed.estimate, 5)
         self.assertEqual(parsed.description, "Создать окно подтверждения. Ссылка www.b.com.")
 
@@ -57,10 +57,10 @@ class ParserTests(unittest.TestCase):
                 self.assertEqual(parsed.description, expected_description)
 
     def test_parses_issue_update_estimate(self) -> None:
-        parsed = parse_issue_update("Измени DFA-12345 story points 5")
+        parsed = parse_issue_update("Измени ABC-12345 story points 5")
 
         self.assertIsNotNone(parsed)
-        self.assertEqual(parsed.issue_key, "DFA-12345")
+        self.assertEqual(parsed.issue_key, "ABC-12345")
         self.assertIsNone(parsed.issue_query)
         self.assertEqual(parsed.estimate, 5)
 

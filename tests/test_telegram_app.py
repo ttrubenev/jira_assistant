@@ -34,7 +34,7 @@ class FakeJira:
         return ()
 
     async def search_sprints(self, query: str) -> tuple[Candidate, ...]:
-        return (Candidate(id="42", name="[DFA:STORM] 18.05-29.05", kind=CandidateKind.SPRINT, key="active"),)
+        return (Candidate(id="42", name="[ABC:TEAM] 18.05-29.05", kind=CandidateKind.SPRINT, key="active"),)
 
     async def search_issues(self, query: str) -> tuple[Candidate, ...]:
         return ()
@@ -56,7 +56,7 @@ class TelegramAppTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(is_cancelled_reply("Проверьте задачу:"))
 
     def test_detects_completed_reply(self) -> None:
-        self.assertTrue(is_completed_reply("Готово: DFA-1"))
+        self.assertTrue(is_completed_reply("Готово: ABC-1"))
         self.assertTrue(is_completed_reply("Готово, создал задач: 2"))
         self.assertFalse(is_completed_reply("Проверьте задачу:"))
 
@@ -66,7 +66,7 @@ class TelegramAppTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Что умеет бот", text)
         self.assertIn("Заведи тикет", text)
         self.assertIn("Заведи задачи", text)
-        self.assertIn("Измени DFA-12345", text)
+        self.assertIn("Измени ABC-123", text)
         self.assertIn("/help", text)
         self.assertIn("/cancel", text)
 
@@ -74,9 +74,9 @@ class TelegramAppTests(unittest.IsolatedAsyncioTestCase):
         manager = ConversationManager(
             FakeJira(),
             defaults=ConversationDefaults(
-                epic=Candidate(id="DFA-33230", key="DFA-33230", name="Default Epic", kind=CandidateKind.EPIC),
-                assignee=Candidate(id="U_M28HF", key="U_M28HF", name="Трубенёв Тимофей", kind=CandidateKind.ASSIGNEE),
-                sprint_query="[DFA:STORM]",
+                epic=Candidate(id="ABC-456", key="ABC-456", name="Default Epic", kind=CandidateKind.EPIC),
+                assignee=Candidate(id="user_key", key="user_key", name="Иванов Иван", kind=CandidateKind.ASSIGNEE),
+                sprint_query="[ABC:TEAM]",
             ),
         )
         interpreter = FakeInterpreter("Создай задачу: тест. Estimate 1")

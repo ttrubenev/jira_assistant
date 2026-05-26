@@ -1,6 +1,6 @@
 # Alfa Jira Telegram Bot
 
-Telegram-бот для создания задач в Jira из текстовых сообщений, с подготовкой к голосовым сообщениям через локальный или корпоративный speech-to-text.
+Telegram-бот для создания задач в Jira из текстовых сообщений.
 
 ## Что умеет MVP
 
@@ -12,9 +12,14 @@ Telegram-бот для создания задач в Jira из текстовы
 - Создает задачу только после явного подтверждения.
 - Хранит секреты только в переменных окружения.
 - Поддерживает старую Jira через REST API `/rest/api/2`.
-- Голосовой ввод подключается через локальную CLI-команду, чтобы не отправлять банковские данные во внешний STT.
 
 ## Быстрый старт
+
+Если нужно поднять бота коллеге с нуля, используйте короткую инструкцию:
+[docs/MINIMAL_SETUP_FOR_COLLEAGUES.md](docs/MINIMAL_SETUP_FOR_COLLEAGUES.md).
+
+Подробная версия лежит здесь:
+[docs/SETUP_FOR_COLLEAGUES.md](docs/SETUP_FOR_COLLEAGUES.md).
 
 ```bash
 python3 -m venv .venv
@@ -22,7 +27,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-В этой рабочей папке `.env` уже создан с настройками DFA. Заполните в нем `TELEGRAM_BOT_TOKEN`, `JIRA_USERNAME`, `JIRA_API_TOKEN` и три `customfield_*`, подключите Endpoint Security VPN, затем запустите:
+Создайте `.env` из `.env.example`, заполните личные токены и Jira-настройки, подключите VPN, затем запустите:
 
 ```bash
 ./scripts/install_service.sh
@@ -59,7 +64,7 @@ pip install -e .
 На Иванова
 ```
 
-Если эпик не указан, бот использует `DFA-33230`: `[Q2-Q4_26ЦФА] Мелкие доработки 2026`. Если спринт не указан, бот ищет активный спринт с префиксом `[DFA:STORM]`.
+Если эпик, спринт или исполнитель не указаны, бот использует значения по умолчанию из `.env`.
 
 Если бот найдет несколько похожих эпиков, исполнителей или спринтов, он покажет нумерованный список. Ответьте номером варианта.
 
@@ -67,12 +72,12 @@ pip install -e .
 
 Старые Jira часто отличаются набором custom fields. Важные переменные:
 
-- `JIRA_BASE_URL=https://jira.moscow.alfaintra.net`
-- `JIRA_PROJECT_KEY=DFA`
-- `JIRA_BOARD_ID=28235`
-- `JIRA_DEFAULT_EPIC_KEY=DFA-33230`
-- `JIRA_DEFAULT_EPIC_NAME="[Q2-Q4_26ЦФА] Мелкие доработки 2026"`
-- `JIRA_DEFAULT_SPRINT_QUERY="[DFA:STORM]"`
+- `JIRA_BASE_URL=https://jira.company.local`
+- `JIRA_PROJECT_KEY` — ключ проекта, например `ABC`.
+- `JIRA_BOARD_ID` — id Jira-доски.
+- `JIRA_DEFAULT_EPIC_KEY` — ключ эпика по умолчанию.
+- `JIRA_DEFAULT_EPIC_NAME` — название эпика по умолчанию.
+- `JIRA_DEFAULT_SPRINT_QUERY` — общий префикс или название спринта.
 - `JIRA_EPIC_LINK_FIELD` — поле Epic Link для создаваемой задачи.
 - `JIRA_EPIC_NAME_FIELD` — поле с названием Epic.
 - `JIRA_SPRINT_FIELD` — поле Sprint.
@@ -89,11 +94,11 @@ pip install -e .
 После заполнения базовых значений в `.env`:
 
 ```env
-JIRA_BASE_URL=https://jira.moscow.alfaintra.net
+JIRA_BASE_URL=https://jira.company.local
 JIRA_USERNAME=your-login
 JIRA_API_TOKEN=your-password-or-token
-JIRA_PROJECT_KEY=DFA
-JIRA_BOARD_ID=28235
+JIRA_PROJECT_KEY=ABC
+JIRA_BOARD_ID=123
 ```
 
 Запустите:
@@ -122,33 +127,6 @@ JIRA_AUTH_MODE=bearer
 JIRA_AUTH_MODE=basic
 ```
 
-## Голосовые сообщения
-
-По умолчанию голос отключен. Для корпоративного или локального speech-to-text укажите:
-
-```bash
-VOICE_TRANSCRIBER_PROVIDER=command
-VOICE_TRANSCRIBER_COMMAND=/path/to/company-stt
-```
-
-Команда получит путь к скачанному `.oga` файлу первым аргументом и должна вернуть распознанный текст в stdout.
-
-Команда может содержать аргументы, например:
-
-```bash
-VOICE_TRANSCRIBER_COMMAND="python /opt/company-stt/transcribe.py"
-```
-
-Также можно включить OpenAI transcription:
-
-```bash
-OPENAI_API_KEY=sk-...
-VOICE_TRANSCRIBER_PROVIDER=openai
-VOICE_TRANSCRIBER_MODEL=gpt-4o-mini-transcribe
-```
-
-Telegram voice будет скачан во временный файл, распознан и затем обработан как обычное текстовое сообщение.
-
 ## AI-агент
 
 По умолчанию AI-агент выключен, и бот работает детерминированным парсером. Чтобы бот понимал более свободные формулировки, включите:
@@ -162,13 +140,13 @@ OPENAI_INTENT_MODEL=gpt-5.5
 Агент не создает задачи напрямую. Он только переписывает сообщение в понятную боту команду, например:
 
 ```text
-закинь тест формы на Трубенёва на два поинта
+закинь тест формы на Иванова на два поинта
 ```
 
 в:
 
 ```text
-Создай задачу: тест формы. На Трубенёва. Estimate 2
+Создай задачу: тест формы. На Иванова. Estimate 2
 ```
 
 Создание задач и изменение Story Points по-прежнему проходят через существующий сценарий с подтверждением или выбором похожей задачи.

@@ -28,14 +28,14 @@ class FakeJira:
     async def search_sprints(self, query: str) -> tuple[Candidate, ...]:
         return (
             Candidate(id="41", name="Alfa Mobile 24.6", kind=CandidateKind.SPRINT),
-            Candidate(id="42", name="[DFA:STORM] 18.05-29.05", kind=CandidateKind.SPRINT, key="active"),
-            Candidate(id="43", name="[DFA:STORM] 01.06-12.06", kind=CandidateKind.SPRINT, key="future"),
+            Candidate(id="42", name="[ABC:TEAM] 18.05-29.05", kind=CandidateKind.SPRINT, key="active"),
+            Candidate(id="43", name="[ABC:TEAM] 01.06-12.06", kind=CandidateKind.SPRINT, key="future"),
         )
 
     async def search_issues(self, query: str) -> tuple[Candidate, ...]:
         return (
-            Candidate(id="DFA-1", key="DFA-1", name="Тестовая форма", kind=CandidateKind.ISSUE),
-            Candidate(id="DFA-2", key="DFA-2", name="Тестовый экран", kind=CandidateKind.ISSUE),
+            Candidate(id="ABC-1", key="ABC-1", name="Тестовая форма", kind=CandidateKind.ISSUE),
+            Candidate(id="ABC-2", key="ABC-2", name="Тестовый экран", kind=CandidateKind.ISSUE),
         )
 
     async def create_issue(self, draft: IssueDraft) -> CreatedIssue:
@@ -70,64 +70,64 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
             FakeJira(),
             defaults=ConversationDefaults(
                 epic=Candidate(
-                    id="DFA-33230",
-                    key="DFA-33230",
-                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    id="ABC-456",
+                    key="ABC-456",
+                    name="Default Epic",
                     kind=CandidateKind.EPIC,
                 ),
-                sprint_query="[DFA:STORM]",
+                sprint_query="[ABC:TEAM]",
             ),
         )
 
         replies = await manager.handle_text(10, "Создай задачу: проверить анкету. На Иванов")
 
-        self.assertIn("[Q2-Q4_26ЦФА] Мелкие доработки 2026", replies[0].text)
-        self.assertIn("[DFA:STORM] 18.05-29.05", replies[0].text)
+        self.assertIn("Default Epic", replies[0].text)
+        self.assertIn("[ABC:TEAM] 18.05-29.05", replies[0].text)
 
     async def test_uses_default_assignee(self) -> None:
         manager = ConversationManager(
             FakeJira(),
             defaults=ConversationDefaults(
                 epic=Candidate(
-                    id="DFA-33230",
-                    key="DFA-33230",
-                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    id="ABC-456",
+                    key="ABC-456",
+                    name="Default Epic",
                     kind=CandidateKind.EPIC,
                 ),
                 assignee=Candidate(
-                    id="U_M28HF",
-                    key="U_M28HF",
-                    name="Трубенёв Тимофей Александрович",
-                    email="TTrubenev@alfabank.ru",
+                    id="user_key",
+                    key="user_key",
+                    name="Иванов Иван Иванович",
+                    email="ivanov@example.local",
                     kind=CandidateKind.ASSIGNEE,
                 ),
-                sprint_query="[DFA:STORM]",
+                sprint_query="[ABC:TEAM]",
             ),
         )
 
         replies = await manager.handle_text(10, "Создай задачу: проверить анкету")
 
-        self.assertIn("Трубенёв Тимофей Александрович", replies[0].text)
-        self.assertIn("U_M28HF", replies[0].text)
+        self.assertIn("Иванов Иван Иванович", replies[0].text)
+        self.assertIn("user_key", replies[0].text)
 
     async def test_confirmation_shows_description(self) -> None:
         manager = ConversationManager(
             FakeJira(),
             defaults=ConversationDefaults(
                 epic=Candidate(
-                    id="DFA-33230",
-                    key="DFA-33230",
-                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    id="ABC-456",
+                    key="ABC-456",
+                    name="Default Epic",
                     kind=CandidateKind.EPIC,
                 ),
                 assignee=Candidate(
-                    id="U_M28HF",
-                    key="U_M28HF",
-                    name="Трубенёв Тимофей Александрович",
-                    email="TTrubenev@alfabank.ru",
+                    id="user_key",
+                    key="user_key",
+                    name="Иванов Иван Иванович",
+                    email="ivanov@example.local",
                     kind=CandidateKind.ASSIGNEE,
                 ),
-                sprint_query="[DFA:STORM]",
+                sprint_query="[ABC:TEAM]",
             ),
         )
 
@@ -168,21 +168,21 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
     async def test_updates_existing_issue_estimate(self) -> None:
         manager = ConversationManager(FakeJira())
 
-        replies = await manager.handle_text(10, "Измени DFA-12345 Estimate 5")
+        replies = await manager.handle_text(10, "Измени ABC-12345 Estimate 5")
 
         self.assertIn("Story Points обновлены: 5", replies[0].text)
-        self.assertIn("DFA-12345", replies[0].text)
+        self.assertIn("ABC-12345", replies[0].text)
 
     async def test_updates_issue_estimate_by_title_after_choice(self) -> None:
         manager = ConversationManager(FakeJira())
 
         replies = await manager.handle_text(10, "Измени задачу тест Estimate 5")
         self.assertIn("Нашел похожие задачи", replies[0].text)
-        self.assertIn("DFA-1", replies[0].text)
+        self.assertIn("ABC-1", replies[0].text)
 
         replies = await manager.handle_text(10, "1")
         self.assertIn("Story Points обновлены: 5", replies[0].text)
-        self.assertIn("DFA-1", replies[0].text)
+        self.assertIn("ABC-1", replies[0].text)
 
     async def test_creates_batch_with_defaults(self) -> None:
         jira = FakeJira()
@@ -190,19 +190,19 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
             jira,
             defaults=ConversationDefaults(
                 epic=Candidate(
-                    id="DFA-33230",
-                    key="DFA-33230",
-                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    id="ABC-456",
+                    key="ABC-456",
+                    name="Default Epic",
                     kind=CandidateKind.EPIC,
                 ),
                 assignee=Candidate(
-                    id="U_M28HF",
-                    key="U_M28HF",
-                    name="Трубенёв Тимофей Александрович",
-                    email="TTrubenev@alfabank.ru",
+                    id="user_key",
+                    key="user_key",
+                    name="Иванов Иван Иванович",
+                    email="ivanov@example.local",
                     kind=CandidateKind.ASSIGNEE,
                 ),
-                sprint_query="[DFA:STORM]",
+                sprint_query="[ABC:TEAM]",
             ),
         )
 
@@ -210,7 +210,7 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Проверьте задачи", replies[0].text)
         self.assertIn("тест1", replies[0].text)
         self.assertIn("тест2", replies[0].text)
-        self.assertIn("Трубенёв Тимофей Александрович", replies[0].text)
+        self.assertIn("Иванов Иван Иванович", replies[0].text)
 
         replies = await manager.handle_text(10, "да")
 
@@ -223,19 +223,19 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
             FakeJira(),
             defaults=ConversationDefaults(
                 epic=Candidate(
-                    id="DFA-33230",
-                    key="DFA-33230",
-                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    id="ABC-456",
+                    key="ABC-456",
+                    name="Default Epic",
                     kind=CandidateKind.EPIC,
                 ),
                 assignee=Candidate(
-                    id="U_M28HF",
-                    key="U_M28HF",
-                    name="Трубенёв Тимофей Александрович",
-                    email="TTrubenev@alfabank.ru",
+                    id="user_key",
+                    key="user_key",
+                    name="Иванов Иван Иванович",
+                    email="ivanov@example.local",
                     kind=CandidateKind.ASSIGNEE,
                 ),
-                sprint_query="[DFA:STORM]",
+                sprint_query="[ABC:TEAM]",
             ),
         )
 
@@ -252,19 +252,19 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
             jira,
             defaults=ConversationDefaults(
                 epic=Candidate(
-                    id="DFA-33230",
-                    key="DFA-33230",
-                    name="[Q2-Q4_26ЦФА] Мелкие доработки 2026",
+                    id="ABC-456",
+                    key="ABC-456",
+                    name="Default Epic",
                     kind=CandidateKind.EPIC,
                 ),
                 assignee=Candidate(
-                    id="U_M28HF",
-                    key="U_M28HF",
-                    name="Трубенёв Тимофей Александрович",
-                    email="TTrubenev@alfabank.ru",
+                    id="user_key",
+                    key="user_key",
+                    name="Иванов Иван Иванович",
+                    email="ivanov@example.local",
                     kind=CandidateKind.ASSIGNEE,
                 ),
-                sprint_query="[DFA:STORM]",
+                sprint_query="[ABC:TEAM]",
             ),
         )
 

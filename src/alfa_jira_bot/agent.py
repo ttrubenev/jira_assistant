@@ -121,8 +121,8 @@ Rules:
 - If intent is unclear, return action "unknown" and canonical_text "".
 
 Examples:
-User: "закинь тест формы на Трубенёва на два поинта"
-{"action":"create_issue","canonical_text":"Создай задачу: тест формы. На Трубенёва. Estimate 2"}
+User: "закинь тест формы на Иванова на два поинта"
+{"action":"create_issue","canonical_text":"Создай задачу: тест формы. На Иванова. Estimate 2"}
 
 User: "поменяй тестовая форма на 0,5"
 {"action":"update_estimate","canonical_text":"Измени задачу тестовая форма Estimate 0.5"}
