@@ -4,22 +4,22 @@
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.alfa.jira-bot</string>
+  <string>com.company.jira-assistant-bot</string>
 
   <key>WorkingDirectory</key>
-  <string>/Users/astonuser/Documents/Alfa</string>
+  <string>/Users/yourname/Documents/jira_assistant</string>
 
   <key>EnvironmentVariables</key>
   <dict>
     <key>PYTHONPATH</key>
-    <string>/Users/astonuser/Documents/Alfa/src</string>
+    <string>/Users/yourname/Documents/jira_assistant/src</string>
   </dict>
 
   <key>ProgramArguments</key>
   <array>
-    <string>/Users/astonuser/Documents/Alfa/.venv/bin/python</string>
+    <string>/Users/yourname/Documents/jira_assistant/.venv/bin/python</string>
     <string>-m</string>
-    <string>alfa_jira_bot</string>
+    <string>jira_assistant_bot</string>
   </array>
 
   <key>RunAtLoad</key>
@@ -29,9 +29,9 @@
   <true/>
 
   <key>StandardOutPath</key>
-  <string>/Users/astonuser/Documents/Alfa/logs/bot.out.log</string>
+  <string>/Users/yourname/Documents/jira_assistant/logs/bot.out.log</string>
 
   <key>StandardErrorPath</key>
-  <string>/Users/astonuser/Documents/Alfa/logs/bot.err.log</string>
+  <string>/Users/yourname/Documents/jira_assistant/logs/bot.err.log</string>
 </dict>
 </plist>

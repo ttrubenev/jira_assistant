@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-label="com.alfa.jira-bot"
+label="com.company.jira-assistant-bot"
 domain="gui/$(id -u)"
 plist="$HOME/Library/LaunchAgents/$label.plist"
 

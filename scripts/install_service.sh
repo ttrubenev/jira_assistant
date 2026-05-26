@@ -3,8 +3,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-label="com.alfa.jira-bot"
-app_dir="${ALFA_JIRA_BOT_HOME:-$HOME/.alfa-jira-bot}"
+label="com.company.jira-assistant-bot"
+app_dir="${JIRA_ASSISTANT_BOT_HOME:-$HOME/.jira-assistant-bot}"
 domain="gui/$(id -u)"
 plist_dir="$HOME/Library/LaunchAgents"
 plist_path="$plist_dir/$label.plist"
@@ -52,7 +52,7 @@ cat > "$plist_path" <<PLIST
   <array>
     <string>$app_dir/.venv/bin/python</string>
     <string>-m</string>
-    <string>alfa_jira_bot</string>
+    <string>jira_assistant_bot</string>
   </array>
 
   <key>RunAtLoad</key>

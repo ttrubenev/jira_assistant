@@ -1,7 +1,7 @@
 import unittest
 
-from alfa_jira_bot.conversation import ConversationDefaults, ConversationManager
-from alfa_jira_bot.domain import Candidate, CandidateKind, CreatedIssue, IssueDraft, UpdatedIssue
+from jira_assistant_bot.conversation import ConversationDefaults, ConversationManager
+from jira_assistant_bot.domain import Candidate, CandidateKind, CreatedIssue, IssueDraft, UpdatedIssue
 
 
 class FakeJira:
@@ -27,7 +27,7 @@ class FakeJira:
 
     async def search_sprints(self, query: str) -> tuple[Candidate, ...]:
         return (
-            Candidate(id="41", name="Alfa Mobile 24.6", kind=CandidateKind.SPRINT),
+            Candidate(id="41", name="Product Team 24.6", kind=CandidateKind.SPRINT),
             Candidate(id="42", name="[ABC:TEAM] 18.05-29.05", kind=CandidateKind.SPRINT, key="active"),
             Candidate(id="43", name="[ABC:TEAM] 01.06-12.06", kind=CandidateKind.SPRINT, key="future"),
         )
@@ -57,7 +57,7 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
 
         replies = await manager.handle_text(
             10,
-            "Создай задачу: проверить историю. Эпик профиль, На Иванов, Спринт Alfa Mobile 24.6",
+            "Создай задачу: проверить историю. Эпик профиль, На Иванов, Спринт Product Team 24.6",
         )
         self.assertIn("Проверьте задачу", replies[0].text)
 
@@ -159,7 +159,7 @@ class ConversationTests(unittest.IsolatedAsyncioTestCase):
 
         await manager.handle_text(
             10,
-            "Создай задачу: проверить историю. Эпик профиль, На Иванов, Спринт Alfa Mobile 24.6",
+            "Создай задачу: проверить историю. Эпик профиль, На Иванов, Спринт Product Team 24.6",
         )
         replies = await manager.handle_text(10, "Нет")
 

@@ -1,7 +1,7 @@
 import unittest
 
-from alfa_jira_bot.domain import Candidate, CandidateKind
-from alfa_jira_bot.fuzzy import rank_candidates, score_text
+from jira_assistant_bot.domain import Candidate, CandidateKind
+from jira_assistant_bot.fuzzy import rank_candidates, score_text
 
 
 class FuzzyTests(unittest.TestCase):

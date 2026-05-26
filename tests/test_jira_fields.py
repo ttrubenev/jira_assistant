@@ -1,7 +1,7 @@
 import unittest
 
-from alfa_jira_bot.config import BotConfig
-from alfa_jira_bot.jira import JiraClient, format_estimate_value
+from jira_assistant_bot.config import BotConfig
+from jira_assistant_bot.jira import JiraClient, format_estimate_value
 
 
 class JiraFieldsTests(unittest.TestCase):

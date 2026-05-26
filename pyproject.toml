@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "alfa-jira-bot"
+name = "jira-assistant-bot"
 version = "0.1.0"
 description = "Telegram bot for creating Jira issues from text messages"
 requires-python = ">=3.9"
@@ -14,8 +14,8 @@ dependencies = [
 ]
 
 [project.scripts]
-alfa-jira-bot = "alfa_jira_bot.__main__:main"
-alfa-jira-discover = "alfa_jira_bot.discover:main"
+jira-assistant-bot = "jira_assistant_bot.__main__:main"
+jira-assistant-discover = "jira_assistant_bot.discover:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

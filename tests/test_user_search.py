@@ -1,6 +1,6 @@
 import unittest
 
-from alfa_jira_bot.user_search import assignee_search_queries, nominative_person_token, strip_html
+from jira_assistant_bot.user_search import assignee_search_queries, nominative_person_token, strip_html
 
 
 class UserSearchTests(unittest.TestCase):

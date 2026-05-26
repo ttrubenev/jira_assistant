@@ -1,6 +1,6 @@
 import unittest
 
-from alfa_jira_bot.parser import parse_issue_batch, parse_issue_message, parse_issue_update
+from jira_assistant_bot.parser import parse_issue_batch, parse_issue_message, parse_issue_update
 
 
 class ParserTests(unittest.TestCase):
@@ -10,7 +10,7 @@ class ParserTests(unittest.TestCase):
             Создай задачу: проверить историю операций после перевыпуска карты.
             Эпик мобильный профиль клиента
             На Иванова
-            Спринт Alfa Mobile 24.6
+            Спринт Product Team 24.6
             Estimate 3
             """
         )
@@ -18,7 +18,7 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(parsed.summary, "проверить историю операций после перевыпуска карты")
         self.assertEqual(parsed.epic_query, "мобильный профиль клиента")
         self.assertEqual(parsed.assignee_query, "Иванова")
-        self.assertEqual(parsed.sprint_query, "Alfa Mobile 24.6")
+        self.assertEqual(parsed.sprint_query, "Product Team 24.6")
         self.assertEqual(parsed.estimate, 3)
         self.assertEqual(parsed.description, "")
 

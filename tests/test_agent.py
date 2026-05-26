@@ -1,6 +1,6 @@
 import unittest
 
-from alfa_jira_bot.agent import DisabledIntentInterpreter, parse_response_text
+from jira_assistant_bot.agent import DisabledIntentInterpreter, parse_response_text
 
 
 class AgentTests(unittest.IsolatedAsyncioTestCase):

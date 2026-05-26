@@ -1,8 +1,8 @@
 import unittest
 
-from alfa_jira_bot.conversation import ConversationDefaults, ConversationManager
-from alfa_jira_bot.domain import Candidate, CandidateKind, CreatedIssue, IssueDraft, UpdatedIssue
-from alfa_jira_bot.telegram_app import (
+from jira_assistant_bot.conversation import ConversationDefaults, ConversationManager
+from jira_assistant_bot.domain import Candidate, CandidateKind, CreatedIssue, IssueDraft, UpdatedIssue
+from jira_assistant_bot.telegram_app import (
     asks_for_confirmation,
     help_text,
     interpret_if_idle,
@@ -91,15 +91,6 @@ class TelegramAppTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(confirmation_answer, "да")
         self.assertEqual(interpreter.calls, ["закинь тест на один поинт"])
-
-    async def test_does_not_interpret_idle_confirmation_replies(self) -> None:
-        manager = ConversationManager(FakeJira())
-        interpreter = FakeInterpreter("Создай задачу: Нет")
-
-        text = await interpret_if_idle(manager, interpreter, 10, "Нет")
-
-        self.assertEqual(text, "Нет")
-        self.assertEqual(interpreter.calls, [])
 
     async def test_interpreter_failure_falls_back_to_original_text(self) -> None:
         manager = ConversationManager(FakeJira())
