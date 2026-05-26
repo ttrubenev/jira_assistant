@@ -48,6 +48,9 @@ class ConversationManager:
         session = self.sessions.setdefault(chat_id, ChatSession())
 
         if session.state == ConversationState.IDLE:
+            if is_confirmation_reply(normalized):
+                return [BotReply("Сейчас нечего подтверждать. Напишите задачу или команду.")]
+
             update = parse_issue_update(normalized)
             if update is not None:
                 if update.issue_key is not None:
@@ -440,3 +443,7 @@ def is_positive(text: str) -> bool:
 
 def is_negative(text: str) -> bool:
     return text.casefold() in {"нет", "не", "no", "n", "отмена"}
+
+
+def is_confirmation_reply(text: str) -> bool:
+    return is_positive(text) or is_negative(text)

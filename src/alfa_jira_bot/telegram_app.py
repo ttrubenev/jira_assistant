@@ -9,7 +9,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 
 from .agent import IntentInterpreter, build_intent_interpreter
 from .config import BotConfig
-from .conversation import BotReply, ConversationDefaults, ConversationManager
+from .conversation import BotReply, ConversationDefaults, ConversationManager, is_confirmation_reply
 from .domain import Candidate, CandidateKind
 from .jira import JiraClient
 
@@ -201,6 +201,8 @@ async def interpret_if_idle(
     text: str,
 ) -> str:
     if not conversation.is_idle(chat_id):
+        return text
+    if is_confirmation_reply(text.strip()):
         return text
     with suppress(Exception):
         return await intent_interpreter.interpret(text)

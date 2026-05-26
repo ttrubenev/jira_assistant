@@ -92,6 +92,15 @@ class TelegramAppTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(confirmation_answer, "да")
         self.assertEqual(interpreter.calls, ["закинь тест на один поинт"])
 
+    async def test_does_not_interpret_idle_confirmation_replies(self) -> None:
+        manager = ConversationManager(FakeJira())
+        interpreter = FakeInterpreter("Создай задачу: Нет")
+
+        text = await interpret_if_idle(manager, interpreter, 10, "Нет")
+
+        self.assertEqual(text, "Нет")
+        self.assertEqual(interpreter.calls, [])
+
     async def test_interpreter_failure_falls_back_to_original_text(self) -> None:
         manager = ConversationManager(FakeJira())
 
